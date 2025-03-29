@@ -60,6 +60,10 @@ func (f *sendOnlyFolder) pull() (bool, error) {
 
 		curFile, ok := snap.Get(protocol.LocalDeviceID, file.FileName())
 		if !ok {
+			// floder is IgnoreDelete, not need accounting
+			if f.IgnoreDelete {
+				return false
+			}
 			if file.IsInvalid() {
 				// Global invalid file just exists for need accounting
 				batch.Append(file)

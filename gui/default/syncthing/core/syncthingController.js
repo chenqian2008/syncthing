@@ -658,7 +658,7 @@ angular.module('syncthing.core')
                 total += $scope.completion[device][folder].globalBytes;
                 needed += $scope.completion[device][folder].needBytes;
                 items += $scope.completion[device][folder].needItems;
-                if ($scope.folders[folder].ignoreDelet === false) {
+                if ($scope.folders[folder].ignoreDelete === false) {
                     deletes += $scope.completion[device][folder].needDeletes;
                 }
             }
