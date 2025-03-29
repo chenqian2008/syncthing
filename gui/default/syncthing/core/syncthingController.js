@@ -16,6 +16,15 @@ angular.module('syncthing.core')
             LocaleService.autoConfigLocale();
 
             if (!$scope.authenticated) {
+                function setVersionFromHeader(_data, _status, headers) {
+                    var version = headers('X-Syncthing-Version');
+                    if (version) {
+                        $scope.version = { version: version };
+                    }
+                }
+                // Get index.html again (likely cached) to retrieve the version header
+                $http.get('').success(setVersionFromHeader).error(setVersionFromHeader);
+
                 // Can't proceed yet - wait for the page reload after successful login.
                 return;
             }
@@ -649,7 +658,9 @@ angular.module('syncthing.core')
                 total += $scope.completion[device][folder].globalBytes;
                 needed += $scope.completion[device][folder].needBytes;
                 items += $scope.completion[device][folder].needItems;
-                deletes += $scope.completion[device][folder].needDeletes;
+                if ($scope.folders[folder].ignoreDelet === false) {
+                    deletes += $scope.completion[device][folder].needDeletes;
+                }
             }
             if (total == 0) {
                 $scope.completion[device]._total = 100;
@@ -1033,7 +1044,7 @@ angular.module('syncthing.core')
             if ($scope.model[folder].needTotalItems === 0) {
                 return 100;
             }
-            if (($scope.model[folder].needBytes == 0 && $scope.model[folder].needDeletes > 0) || $scope.model[folder].globalBytes == 0) {
+            if (($scope.model[folder].needBytes == 0 && $scope.folders[folder].ignoreDelete === false && $scope.model[folder].needDeletes > 0) || $scope.model[folder].globalBytes == 0) {
                 // We don't need any data, but we have deletes that we need
                 // to do. Drop down the completion percentage to indicate
                 // that we have stuff to do.
@@ -1447,7 +1458,7 @@ angular.module('syncthing.core')
             // Assume hasRemoteGUIAddress is true or we would not be here
             var conn = $scope.connections[deviceCfg.deviceID];
             // Use regex to filter out scope ID from IPv6 addresses.
-            return 'http://' + replaceAddressPort(conn.address, deviceCfg.remoteGUIPort).replace('%.*?\]:', ']:');
+            return 'http://' + replaceAddressPort(conn.address, deviceCfg.remoteGUIPort).replace(/%.*?\]:/, ']:');
         };
 
         function replaceAddressPort(address, newPort) {
@@ -3334,6 +3345,11 @@ angular.module('syncthing.core')
                 return 'checkbox';
             }
             if (value instanceof Array) {
+                if (value.some(function (element) {
+                    return typeof element !== 'number' && typeof element !== 'string';
+                })) {
+                    return 'skip';
+                }
                 return 'list';
             }
             if (typeof value === 'object') {
@@ -3689,7 +3705,6 @@ angular.module('syncthing.core')
                 untrusted: '=',
             },
             link: function (scope, elem, attrs) {
-                var plain = false;
                 scope.togglePasswordVisibility = function() {
                     scope.plain = !scope.plain;
                 };
