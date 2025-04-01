@@ -1085,7 +1085,7 @@ func (m *model) LocalChangedFolderFiles(folder string, page, perpage int) ([]pro
 	}
 	defer snap.Release()
 
-	if snap.ReceiveOnlyChangedSize().TotalItems() == 0 {
+	if snap.ReceiveOnlyChangedSize().TotalItems(m.cfg.DefaultFolder().IgnoreDelete) == 0 {
 		return nil, nil
 	}
 
